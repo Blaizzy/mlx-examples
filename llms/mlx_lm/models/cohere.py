@@ -10,13 +10,13 @@ from .base import BaseModelArgs
 @dataclass
 class ModelArgs(BaseModelArgs):
     model_type: str
-    rope_theta: float
     hidden_size: int = 8192
     num_hidden_layers: int = 40
     intermediate_size: int = 22528
     num_attention_heads: int = 64
     num_key_value_heads: int = 64
     model_max_length: int = 131072
+    rope_theta: float = 75000000.0
     vocab_size: int = 256000
     layer_norm_eps: float = 1e-05
     logit_scale: float = 0.0625
