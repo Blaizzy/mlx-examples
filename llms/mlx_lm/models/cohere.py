@@ -15,7 +15,6 @@ class ModelArgs(BaseModelArgs):
     intermediate_size: int = 22528
     num_attention_heads: int = 64
     num_key_value_heads: int = 64
-    model_max_length: int = 131072
     rope_theta: float = 75000000.0
     vocab_size: int = 256000
     layer_norm_eps: float = 1e-05
@@ -62,7 +61,7 @@ class Attention(nn.Module):
                 self.n_kv_heads, head_dim, eps=args.layer_norm_eps
             )
 
-        self.rope = nn.RoPE(args.model_max_length, traditional=True, base=args.rope_theta)
+        self.rope = nn.RoPE(head_dim, traditional=True, base=args.rope_theta)
 
     def __call__(
         self,
