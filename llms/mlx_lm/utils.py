@@ -295,14 +295,27 @@ def generate_step(
     with mx.stream(generation_stream):
         total_prompt_tokens = y.size
         prompt_processed_tokens = 0
-        while y.size > prefill_step_size:
-            model(y[:prefill_step_size][None], cache=prompt_cache)
-            quantize_cache_fn(prompt_cache)
-            mx.eval([c.state for c in prompt_cache])
+        num_batches = (y.size + prefill_step_size - 1) // prefill_step_size
+        if num_batches > 1:
+            # Pre-allocate slices for better memory efficiency
+            slices = [
+                y[i*prefill_step_size:(i+1)*prefill_step_size][None]
+                for i in range(num_batches-1)
+            ]
+
+            # Process all full-sized batches in parallel
+            for slice in slices:
+                model(slice, cache=prompt_cache)
+                quantize_cache_fn(prompt_cache)
+                mx.eval([c.state for c in prompt_cache])
+                mx.metal.clear_cache()
+
+            # Update progress
+            prompt_processed_tokens += (num_batches-1) * prefill_step_size
             prompt_progress_callback(prompt_processed_tokens, total_prompt_tokens)
-            prompt_processed_tokens += prefill_step_size
-            y = y[prefill_step_size:]
-            mx.metal.clear_cache()
+
+            # Return remaining slice
+            y = y[(num_batches-1)*prefill_step_size:]
 
         y, logprobs = _step(y)
 
